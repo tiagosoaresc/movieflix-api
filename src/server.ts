@@ -24,6 +24,20 @@ app.post('/movies', async (req, res) => {
     const { title, genre_id, language_id, oscar_count, release_date } = req.body
 
     try {
+
+        // 1. Verificar no banco se já existe um filme com o mesmo nome que está sendo enviado 
+
+        // 2. Case insensitive - se a busca for feita por letra minúscula ou maiúscula não irá importar, pois será o mesmo nome e o registro vai ser retornado na consulta.
+        const movieWithSameTitle = await prisma.movie.findFirst({
+            where: {
+                title: {equals: title, mode:"insensitive"}
+            }
+        })
+
+        if(movieWithSameTitle){
+            return res.status(409).send({message: "Já existe um filme cadastrado com esse título"})
+        }
+
         await prisma.movie.create({
             data: {
                 title: title,
