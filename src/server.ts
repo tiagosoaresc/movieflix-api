@@ -5,6 +5,8 @@ const port = 3000
 const app = express()
 const prisma = new PrismaClient()
 
+app.use(express.json())
+
 app.get('/movies', async (req, res) => {
     const movies = await prisma.movie.findMany({
         orderBy: {
@@ -18,16 +20,23 @@ app.get('/movies', async (req, res) => {
     res.json(movies)
 })
 
-app.post("/movies", async (req, res) => {
-    await prisma.movie.create({
-        data: {
-            title: "Filme de teste",
-            genre_id: 7,
-            language_id: 1,
-            oscar_count: 0,
-            release_date: new Date(2020,0,1)
-        }
-    })
+app.post('/movies', async (req, res) => {
+    const { title, genre_id, language_id, oscar_count, release_date } = req.body
+
+    try {
+        await prisma.movie.create({
+            data: {
+                title: title,
+                genre_id: genre_id,
+                language_id: language_id,
+                oscar_count: oscar_count,
+                release_date: new Date(release_date),
+            },
+        })
+    } catch (error) {
+        return res.status(500).send({ message: 'Falha ao cadastrar o filme' })
+    }
+
     res.status(201).send()
 })
 
