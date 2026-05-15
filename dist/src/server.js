@@ -1,15 +1,12 @@
-import express from 'express'
-import { PrismaClient } from '@prisma/client'
-import swaggerUi from 'swagger-ui-express'
-import swaggerDocument from '../swagger.json' with { type: 'json' }
-
-const port = 3000
-const app = express()
-const prisma = new PrismaClient()
-
-app.use(express.json())
-app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument))
-
+import express from 'express';
+import { PrismaClient } from '@prisma/client';
+import swaggerUi from 'swagger-ui-express';
+import swaggerDocument from '../swagger.json' with { type: 'json' };
+const port = 3000;
+const app = express();
+const prisma = new PrismaClient();
+app.use(express.json());
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 app.get('/movies', async (req, res) => {
     const movies = await prisma.movie.findMany({
         orderBy: {
@@ -19,29 +16,24 @@ app.get('/movies', async (req, res) => {
             genres: true,
             languages: true,
         },
-    })
-    res.json(movies)
-})
-
+    });
+    res.json(movies);
+});
 app.post('/movies', async (req, res) => {
-    const { title, genre_id, language_id, oscar_count, release_date } = req.body
-
+    const { title, genre_id, language_id, oscar_count, release_date } = req.body;
     try {
         // 1. Verificar no banco se já existe um filme com o mesmo nome que está sendo enviado
-
         // 2. Case insensitive - se a busca for feita por letra minúscula ou maiúscula não irá importar, pois será o mesmo nome e o registro vai ser retornado na consulta.
         const movieWithSameTitle = await prisma.movie.findFirst({
             where: {
                 title: { equals: title, mode: 'insensitive' },
             },
-        })
-
+        });
         if (movieWithSameTitle) {
             return res.status(409).send({
                 message: 'Já existe um filme cadastrado com esse título',
-            })
+            });
         }
-
         await prisma.movie.create({
             data: {
                 title: title,
@@ -50,37 +42,32 @@ app.post('/movies', async (req, res) => {
                 oscar_count: oscar_count,
                 release_date: new Date(release_date),
             },
-        })
-    } catch (error) {
-        return res.status(500).send({ message: 'Falha ao cadastrar o filme' })
+        });
     }
-
-    res.status(201).send()
-})
-
+    catch (error) {
+        return res.status(500).send({ message: 'Falha ao cadastrar o filme' });
+    }
+    res.status(201).send();
+});
 app.put('/movies/:id', async (req, res) => {
     // Pegar o ID do registro que será atualizado
-    const id = Number(req.params.id)
-
+    const id = Number(req.params.id);
     try {
         const movie = await prisma.movie.findUnique({
             where: {
                 id: id,
             },
-        })
-
+        });
         if (!movie) {
             return res
                 .status(404)
-                .send({ message: 'Filme não encontrado, esse ID não existe.' })
+                .send({ message: 'Filme não encontrado, esse ID não existe.' });
         }
-
-        const data = { ...req.body }
+        const data = { ...req.body };
         // Transformando a data que está em tipo sting em um tipo date, para que possa ser adicionado no banco de dados. Caso n'ao possua uma release_date ela ter o valor undefined e o prisma não irá atualiza-la
         data.release_date = data.release_date
             ? new Date(data.release_date)
-            : undefined
-
+            : undefined;
         // Pegar os dados do filme que será atualizado e atualizar ele no prisma
         await prisma.movie.update({
             where: {
@@ -88,45 +75,39 @@ app.put('/movies/:id', async (req, res) => {
             },
             // Transformar a string da requisição em um tipo date pra conseguir aloca-la no banco de dados
             data: data,
-        })
-    } catch (error) {
+        });
+    }
+    catch (error) {
         return res
             .status(500)
-            .send({ message: 'Falha ao atualizar o registro do filme.' })
+            .send({ message: 'Falha ao atualizar o registro do filme.' });
     }
-
     // Retornar o status correto informando que o filme foi atualizado
-    res.status(200).send({ message: `O filme com o id: ${id}, foi atualizado` })
-})
-
+    res.status(200).send({ message: `O filme com o id: ${id}, foi atualizado` });
+});
 app.delete('/movies/:id', async (req, res) => {
-    const id = Number(req.params.id)
-
+    const id = Number(req.params.id);
     try {
-        const movie = await prisma.movie.findUnique({ where: { id } })
-
+        const movie = await prisma.movie.findUnique({ where: { id } });
         if (!movie) {
             return res
                 .status(404)
-                .send({ message: 'O filme não foi encontrado' })
+                .send({ message: 'O filme não foi encontrado' });
         }
-
-        await prisma.movie.delete({ where: { id } })
-    } catch (error) {
+        await prisma.movie.delete({ where: { id } });
+    }
+    catch (error) {
         return res
             .status(500)
-            .send({ message: 'Não foi possível remover o filme.' })
+            .send({ message: 'Não foi possível remover o filme.' });
     }
-
     res.status(200).send({
         message: `O filme com o id: ${id} foi deletado com sucesso.`,
-    })
-})
-
+    });
+});
 app.get('/movies/:genreName', async (req, res) => {
     // receber o nome do gênero pelo parametro da rota
-    console.log(req.params.genreName)
-
+    console.log(req.params.genreName);
     // filtrar os filmes do banco pelo genero
     try {
         const moviesFilteredByGenreName = await prisma.movie.findMany({
@@ -142,16 +123,17 @@ app.get('/movies/:genreName', async (req, res) => {
                     },
                 },
             },
-        })
+        });
         // retornar os filmes filtrados na resposta da rota
-        res.status(200).send(moviesFilteredByGenreName)
-    } catch (error) {
+        res.status(200).send(moviesFilteredByGenreName);
+    }
+    catch (error) {
         return res
             .status(500)
-            .send({ message: ' Falha ao filtrar filmes por gênero' })
+            .send({ message: ' Falha ao filtrar filmes por gênero' });
     }
-})
-
+});
 app.listen(port, () => {
-    console.log(`Servidor em execução na porta ${port}`)
-})
+    console.log(`Servidor em execução na porta ${port}`);
+});
+//# sourceMappingURL=server.js.map
